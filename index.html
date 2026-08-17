@@ -576,7 +576,11 @@ tr:hover td{background:#fafafa}
     </div>
     <div class="form-row">
       <label>หมายเหตุ</label>
-      <textarea id="fNote" placeholder="รายละเอียดเพิ่มเติม"></textarea>
+      <textarea id="fNote" placeholder="รายละเอียดเพิ่มเติม" oninput="previewNoteLinks()"></textarea>
+      <div id="noteLinksPreview" style="display:none;margin-top:8px;padding:8px 10px;background:#fffbf0;border:1px solid #ffe0a0;border-radius:8px">
+        <div style="font-size:11px;color:#a06000;font-weight:600;margin-bottom:6px">🔍 ลิงก์ที่ตรวจพบจากหมายเหตุ (กดเพื่อเปิด)</div>
+        <div id="noteLinksPreviewPills" style="display:flex;flex-wrap:wrap;gap:5px"></div>
+      </div>
     </div>
     <div class="form-row" id="formUpdateSection" style="display:none;border-top:1px solid #eee;padding-top:14px;margin-top:6px">
       <label>📝 อัพเดทงานรายวัน</label>
@@ -1617,6 +1621,24 @@ function removeModalLink(idx){
   renderModalLinks();
 }
 
+function previewNoteLinks() {
+  const noteEl = document.getElementById('fNote');
+  const previewBox = document.getElementById('noteLinksPreview');
+  const pillsBox = document.getElementById('noteLinksPreviewPills');
+  if (!noteEl || !previewBox || !pillsBox) return;
+  const detected = extractUrlsFromNote(noteEl.value);
+  if (detected.length === 0) {
+    previewBox.style.display = 'none';
+    pillsBox.innerHTML = '';
+    return;
+  }
+  previewBox.style.display = 'block';
+  pillsBox.innerHTML = detected.map(lnk => {
+    const icon = getLinkIcon(lnk.url);
+    return `<a href="${lnk.url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#a06000;background:#fff8e6;padding:4px 10px;border-radius:20px;border:1px solid #ffe0a0;text-decoration:none;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${icon} ${lnk.label}</a>`;
+  }).join('');
+}
+
 function updateDatalist(){
   const dl=document.getElementById('taskNamesDatalist');
   if(!dl) return;
@@ -1658,6 +1680,7 @@ function editTask(id){
   document.getElementById('formUpdateSection').style.display='block';
   document.getElementById('formUpdateList').innerHTML=buildUpdatesListHTML(id);
   document.getElementById('formNewUpdateText').value='';
+  previewNoteLinks();
   document.getElementById('taskModal').classList.add('open');
 }
 function clearForm(){
