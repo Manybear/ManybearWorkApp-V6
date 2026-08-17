@@ -3,7 +3,7 @@
 // กลยุทธ์: NETWORK-FIRST — พยายามดึงไฟล์ใหม่จากเน็ตก่อนเสมอ ถ้าไม่มีเน็ตค่อย fallback ไปใช้แคชเก่า
 // แบบนี้ทุกครั้งที่อัปเดต index.html ใหม่บน GitHub ผู้ใช้จะเห็นเวอร์ชันล่าสุดทันทีที่เปิดแอป (ตอนมีเน็ต)
 
-const CACHE_NAME = 'manybear-cache-v22';
+const CACHE_NAME = 'manybear-cache-v23';
 const ASSETS = [
   './',
   './index.html',
