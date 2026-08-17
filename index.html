@@ -1121,7 +1121,7 @@ function renderTasks(){
       const pct = t.percent || 0;
       const barColor = pct >= 100 ? '#11734b' : pct >= 60 ? '#8989eb' : '#f46524';
 
-      // Attachments (files / images / links)
+      // Attachments (files / images)
       let fileCell = '';
       if (showFile) {
         if (t.imageData) {
@@ -1130,14 +1130,11 @@ function renderTasks(){
         if (t.fileName) {
           fileCell += `<span style="font-size:11px;background:#f0f0f0;padding:2px 6px;border-radius:4px;color:#555" title="${t.fileName}">📄 ${t.fileName.length > 10 ? t.fileName.slice(0,8) + '…' : t.fileName}</span>`;
         }
-        const lnks = t.links || (t.link ? [ { label: 'ลิงก์', url: t.link } ] : []);
-        lnks.forEach(lnk => {
-          if (lnk.url) {
-            const label = lnk.label || 'ลิงก์';
-            fileCell += ` <a href="${lnk.url}" target="_blank" style="display:inline-block;font-size:10px;background:#eef2ff;color:var(--purple-dark);padding:1px 5px;border-radius:4px;border:1px solid var(--purple-light);text-decoration:none;margin-top:2px" title="${lnk.url}">🔗 ${label}</a>`;
-          }
-        });
       }
+
+      // Links block (always show, separate from fileCell)
+      const taskLnks = t.links || (t.link ? [ { label: 'ลิงก์', url: t.link } ] : []);
+      const linkBlock = renderLinkBlock(taskLnks);
 
       let noteCell = '';
       if (showNote && t.note) {
@@ -1164,6 +1161,7 @@ function renderTasks(){
               
               ${updateBubble}
               ${noteCell}
+              ${linkBlock}
               
               <div class="meta-row">
                 ${t.assigner ? `<span class="meta-item">👤 ${t.assigner}</span>` : ''}
@@ -2415,7 +2413,7 @@ function renderCompletedTasks(){
     const pct = t.percent || 0;
     const barColor = '#11734b';
 
-    // Attachments
+    // Attachments (files / images)
     let fileCell = '';
     if (showFile) {
       if (t.imageData) {
@@ -2424,14 +2422,11 @@ function renderCompletedTasks(){
       if (t.fileName) {
         fileCell += `<span style="font-size:11px;background:#f0f0f0;padding:2px 6px;border-radius:4px;color:#555" title="${t.fileName}">📄 ${t.fileName.length > 10 ? t.fileName.slice(0,8) + '…' : t.fileName}</span>`;
       }
-      const lnks = t.links || (t.link ? [ { label: 'ลิงก์', url: t.link } ] : []);
-      lnks.forEach(lnk => {
-        if (lnk.url) {
-          const label = lnk.label || 'ลิงก์';
-          fileCell += ` <a href="${lnk.url}" target="_blank" style="display:inline-block;font-size:10px;background:#eef2ff;color:var(--purple-dark);padding:1px 5px;border-radius:4px;border:1px solid var(--purple-light);text-decoration:none;margin-top:2px" title="${lnk.url}">🔗 ${label}</a>`;
-        }
-      });
     }
+
+    // Links block
+    const compLnks = t.links || (t.link ? [ { label: 'ลิงก์', url: t.link } ] : []);
+    const compLinkBlock = renderLinkBlock(compLnks);
 
     let noteCell = '';
     if (showNote && t.note) {
@@ -2458,6 +2453,7 @@ function renderCompletedTasks(){
             
             ${latestUpdateBubble}
             ${noteCell}
+            ${compLinkBlock}
             
             <div class="meta-row">
               ${t.assigner ? `<span class="meta-item">👤 ${t.assigner}</span>` : ''}
@@ -2558,6 +2554,41 @@ function toggleTextCollapse(id) {
     dots.style.display = 'none';
     btn.textContent = 'ย่อลง';
   }
+}
+
+// ============ LINK DISPLAY HELPERS ============
+function getLinkIcon(url) {
+  if (!url) return '🔗';
+  const u = url.toLowerCase();
+  if (u.includes('youtube.com') || u.includes('youtu.be')) return '▶️';
+  if (u.includes('facebook.com') || u.includes('fb.com') || u.includes('fb.watch')) return '💙';
+  if (u.includes('instagram.com')) return '📷';
+  if (u.includes('tiktok.com')) return '🎵';
+  if (u.includes('twitter.com') || u.includes('x.com')) return '🐦';
+  if (u.includes('drive.google.com')) return '📂';
+  if (u.includes('docs.google.com')) return '📄';
+  if (u.includes('sheets.google.com')) return '📊';
+  if (u.includes('canva.com')) return '🎨';
+  if (u.includes('dropbox.com')) return '📦';
+  if (u.includes('notion.so') || u.includes('notion.site')) return '📓';
+  if (u.includes('figma.com')) return '🖌️';
+  if (u.includes('line.me') || u.includes('lin.ee')) return '💬';
+  if (u.includes('wa.me') || u.includes('whatsapp.com')) return '💬';
+  if (u.includes('shopee') || u.includes('lazada') || u.includes('amazon')) return '🛒';
+  if (u.includes('github.com')) return '⚙️';
+  if (u.includes('mailto:')) return '📧';
+  return '🔗';
+}
+function renderLinkBlock(links) {
+  if (!links || links.length === 0) return '';
+  const validLinks = links.filter(lnk => lnk && lnk.url);
+  if (validLinks.length === 0) return '';
+  const items = validLinks.map(lnk => {
+    const icon = getLinkIcon(lnk.url);
+    const label = lnk.label || 'ลิงก์';
+    return `<a href="${lnk.url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--purple-dark);background:#f0efff;padding:4px 10px;border-radius:20px;border:1px solid var(--purple-light);text-decoration:none;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:background 0.15s" onmouseover="this.style.background='#dcd9ff'" onmouseout="this.style.background='#f0efff'" title="${lnk.url}">${icon} <span style="overflow:hidden;text-overflow:ellipsis;max-width:160px;display:inline-block">${label}</span></a>`;
+  }).join('');
+  return `<div class="link-block" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px">${items}</div>`;
 }
 
 // ============ THEME COLOR ============
