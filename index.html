@@ -2529,14 +2529,10 @@ function renderCollapsibleText(text, limit = 150, uniqueId) {
     shortText = shortLines.slice(0, 2).join('\n');
   }
   const htmlShort = shortText.replace(/\n/g, '<br>');
-  const escShort = htmlShort.replace(/"/g, '&quot;');
-  const escFull = htmlFull.replace(/"/g, '&quot;');
-  return `
-    <span class="collapsible-text-wrap" id="wrap-${uniqueId}" data-short="${escShort}" data-full="${escFull}">
-      <span class="text-content">${htmlShort}</span><span class="dots">...</span>
-      <a href="javascript:void(0)" class="toggle-text-btn" onclick="toggleTextCollapse('${uniqueId}')" style="color:var(--purple);font-weight:600;margin-left:6px;text-decoration:none;font-size:12px;white-space:nowrap">ดูเพิ่มเติม</a>
-    </span>
-  `;
+  // Store full/short in a global map keyed by uniqueId to avoid HTML attribute escaping issues
+  if (!window._collapsibleStore) window._collapsibleStore = {};
+  window._collapsibleStore[uniqueId] = { full: htmlFull, short: htmlShort };
+  return `<span class="collapsible-text-wrap" id="wrap-${uniqueId}"><span class="text-content">${htmlShort}</span><span class="dots">...</span> <a href="javascript:void(0)" class="toggle-text-btn" onclick="toggleTextCollapse('${uniqueId}')" style="color:var(--purple);font-weight:600;text-decoration:none;font-size:12px;white-space:nowrap">ดูเพิ่มเติม</a></span>`;
 }
 function toggleTextCollapse(id) {
   const wrap = document.getElementById('wrap-' + id);
@@ -2544,13 +2540,15 @@ function toggleTextCollapse(id) {
   const content = wrap.querySelector('.text-content');
   const dots = wrap.querySelector('.dots');
   const btn = wrap.querySelector('.toggle-text-btn');
+  const store = (window._collapsibleStore || {})[id];
+  if (!store) return;
   const isExpanded = btn.textContent === 'ย่อลง';
   if (isExpanded) {
-    content.innerHTML = wrap.dataset.short;
+    content.innerHTML = store.short;
     dots.style.display = 'inline';
     btn.textContent = 'ดูเพิ่มเติม';
   } else {
-    content.innerHTML = wrap.dataset.full;
+    content.innerHTML = store.full;
     dots.style.display = 'none';
     btn.textContent = 'ย่อลง';
   }
