@@ -1134,7 +1134,7 @@ function renderTasks(){
 
       // Links block (always show, separate from fileCell)
       const taskLnks = t.links || (t.link ? [ { label: 'ลิงก์', url: t.link } ] : []);
-      const linkBlock = renderLinkBlock(taskLnks);
+      const linkBlock = renderLinkBlock(taskLnks, t.note);
 
       let noteCell = '';
       if (showNote && t.note) {
@@ -2426,7 +2426,7 @@ function renderCompletedTasks(){
 
     // Links block
     const compLnks = t.links || (t.link ? [ { label: 'ลิงก์', url: t.link } ] : []);
-    const compLinkBlock = renderLinkBlock(compLnks);
+    const compLinkBlock = renderLinkBlock(compLnks, t.note);
 
     let noteCell = '';
     if (showNote && t.note) {
@@ -2577,14 +2577,50 @@ function getLinkIcon(url) {
   if (u.includes('mailto:')) return '📧';
   return '🔗';
 }
-function renderLinkBlock(links) {
-  if (!links || links.length === 0) return '';
-  const validLinks = links.filter(lnk => lnk && lnk.url);
-  if (validLinks.length === 0) return '';
-  const items = validLinks.map(lnk => {
+function extractUrlsFromNote(noteText) {
+  if (!noteText) return [];
+  const urlRegex = /https?:\/\/[^\s"'<>\[\]{|}\\^`\u0000-\u001f]+/gi;
+  const found = noteText.match(urlRegex) || [];
+  return found.map(url => {
+    // Clean trailing punctuation
+    url = url.replace(/[.,;:!?)]+$/, '');
+    // Auto-label from domain
+    let label = 'ลิงก์';
+    try {
+      const host = new URL(url).hostname.replace('www.','');
+      if (host.includes('youtube') || host.includes('youtu.be')) label = 'YouTube';
+      else if (host.includes('facebook') || host.includes('fb.')) label = 'Facebook';
+      else if (host.includes('instagram')) label = 'Instagram';
+      else if (host.includes('tiktok')) label = 'TikTok';
+      else if (host.includes('x.com') || host.includes('twitter')) label = 'X / Twitter';
+      else if (host.includes('drive.google')) label = 'Google Drive';
+      else if (host.includes('docs.google')) label = 'Google Docs';
+      else if (host.includes('canva')) label = 'Canva';
+      else if (host.includes('notion')) label = 'Notion';
+      else if (host.includes('line.me') || host.includes('lin.ee')) label = 'LINE';
+      else label = host.split('.')[0] || 'ลิงก์';
+    } catch(e) {}
+    return { url, label, fromNote: true };
+  });
+}
+
+function renderLinkBlock(links, noteText) {
+  const manualLinks = (links || []).filter(lnk => lnk && lnk.url);
+  const noteLinks = extractUrlsFromNote(noteText);
+
+  // Merge: avoid duplicates (URLs already in manual links)
+  const manualUrls = new Set(manualLinks.map(l => l.url));
+  const merged = [...manualLinks, ...noteLinks.filter(l => !manualUrls.has(l.url))];
+
+  if (merged.length === 0) return '';
+  const items = merged.map(lnk => {
     const icon = getLinkIcon(lnk.url);
     const label = lnk.label || 'ลิงก์';
-    return `<a href="${lnk.url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--purple-dark);background:#f0efff;padding:4px 10px;border-radius:20px;border:1px solid var(--purple-light);text-decoration:none;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:background 0.15s" onmouseover="this.style.background='#dcd9ff'" onmouseout="this.style.background='#f0efff'" title="${lnk.url}">${icon} <span style="overflow:hidden;text-overflow:ellipsis;max-width:160px;display:inline-block">${label}</span></a>`;
+    const bg = lnk.fromNote ? '#fff8e6' : '#f0efff';
+    const border = lnk.fromNote ? '#ffe0a0' : 'var(--purple-light)';
+    const color = lnk.fromNote ? '#a06000' : 'var(--purple-dark)';
+    const hover = lnk.fromNote ? '#fff0c0' : '#dcd9ff';
+    return `<a href="${lnk.url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:${color};background:${bg};padding:4px 10px;border-radius:20px;border:1px solid ${border};text-decoration:none;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:background 0.15s" onmouseover="this.style.background='${hover}'" onmouseout="this.style.background='${bg}'" title="${lnk.url}">${icon} <span style="overflow:hidden;text-overflow:ellipsis;max-width:160px;display:inline-block">${label}</span></a>`;
   }).join('');
   return `<div class="link-block" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px">${items}</div>`;
 }
